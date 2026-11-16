@@ -1,0 +1,25 @@
+# MIG layouts applied by the MIG manager when a node is labelled nvidia.com/mig.config=<name>.
+# H100 80GB: 7 x 1g.10gb for many small isolated jobs, or 2 x 3g.40gb + 1 x 1g.10gb for mixed use.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-mig-config
+  namespace: gpu-operator
+data:
+  config.yaml: |-
+    version: v1
+    mig-configs:
+      all-disabled:
+        - devices: all
+          mig-enabled: false
+      inference-7x1g:
+        - devices: all
+          mig-enabled: true
+          mig-devices:
+            "1g.10gb": 7
+      mixed-2x3g-1x1g:
+        - devices: all
+          mig-enabled: true
+          mig-devices:
+            "3g.40gb": 2
+            "1g.10gb": 1

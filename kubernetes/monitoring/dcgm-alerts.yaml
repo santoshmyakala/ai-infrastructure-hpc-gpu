@@ -1,0 +1,37 @@
+# Prometheus alerts on dcgm-exporter metrics (kube-prometheus-stack PrometheusRule).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: gpu-health
+  namespace: monitoring
+spec:
+  groups:
+    - name: gpu.health
+      rules:
+        - alert: GPUXidError
+          expr: increase(DCGM_FI_DEV_XID_ERRORS[10m]) > 0
+          labels: { severity: critical }
+          annotations:
+            summary: "XID {{ $value }} on {{ $labels.Hostname }} GPU {{ $labels.gpu }}"
+            description: "XID errors indicate driver/hardware faults (e.g. 48 double-bit ECC, 79 fallen off the bus). Cordon the node."
+        - alert: GPUHighTemperature
+          expr: DCGM_FI_DEV_GPU_TEMP > 85
+          for: 10m
+          labels: { severity: warning }
+          annotations:
+            summary: "GPU {{ $labels.gpu }} on {{ $labels.Hostname }} at {{ $value }}°C"
+        - alert: GPURemappedRowsPending
+          expr: DCGM_FI_DEV_ROW_REMAP_PENDING > 0
+          labels: { severity: warning }
+          annotations:
+            summary: "GPU memory row remap pending on {{ $labels.Hostname }}; reset GPU at next drain"
+    - name: gpu.efficiency
+      rules:
+        - record: namespace:gpu_utilization:avg
+          expr: avg by (namespace) (DCGM_FI_DEV_GPU_UTIL)
+        - alert: GPUAllocatedButIdle
+          expr: avg_over_time(DCGM_FI_DEV_GPU_UTIL[1h]) < 10 and on (pod) kube_pod_status_phase{phase="Running"} == 1
+          for: 2h
+          labels: { severity: info }
+          annotations:
+            summary: "Pod {{ $labels.pod }} holds a GPU at <10% utilisation for 2h+ (cost waste)"

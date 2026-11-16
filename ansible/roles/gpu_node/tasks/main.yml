@@ -1,0 +1,66 @@
+---
+- name: Install NVIDIA CUDA repository keyring
+  ansible.builtin.apt:
+    deb: "{{ gpu_node_cuda_keyring_url }}"
+
+- name: Install open GPU kernel modules, container toolkit and DCGM
+  ansible.builtin.apt:
+    name:
+      - "nvidia-open-{{ gpu_node_driver_branch }}"
+      - nvidia-container-toolkit
+      - datacenter-gpu-manager-4-cuda12
+    update_cache: true
+  notify: Reboot GPU node
+
+- name: Configure the container runtime for CDI
+  ansible.builtin.command: nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+  args:
+    creates: /etc/cdi/nvidia.yaml
+
+- name: Enable the persistence daemon (avoids driver re-init latency per job)
+  ansible.builtin.systemd_service:
+    name: nvidia-persistenced
+    enabled: true
+    state: started
+  when: gpu_node_persistence_mode
+
+- name: Enable DCGM host engine
+  ansible.builtin.systemd_service:
+    name: nvidia-dcgm
+    enabled: true
+    state: started
+
+- name: Install Slurm compute daemon
+  when: gpu_node_install_slurmd
+  block:
+    - name: Install slurmd and munge
+      ansible.builtin.apt:
+        name: [slurmd, munge]
+
+    - name: Deploy GPU scheduling configuration
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "/etc/slurm/{{ item | basename }}"
+        mode: "0644"
+      loop:
+        - "{{ playbook_dir }}/../slurm/etc/slurm.conf"
+        - "{{ playbook_dir }}/../slurm/etc/gres.conf"
+        - "{{ playbook_dir }}/../slurm/etc/cgroup.conf"
+        - "{{ playbook_dir }}/../slurm/etc/topology.conf"
+      notify: Restart slurmd
+
+    - name: Start slurmd
+      ansible.builtin.systemd_service:
+        name: slurmd
+        enabled: true
+        state: started
+
+- name: Health check — every GPU visible to NVML
+  ansible.builtin.command: nvidia-smi --query-gpu=index,name,memory.total --format=csv,noheader
+  register: gpu_node_smi
+  changed_when: false
+  failed_when: gpu_node_smi.rc != 0 or (gpu_node_smi.stdout_lines | length) == 0
+
+- name: Report GPUs
+  ansible.builtin.debug:
+    var: gpu_node_smi.stdout_lines

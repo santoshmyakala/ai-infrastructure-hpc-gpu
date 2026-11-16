@@ -1,0 +1,6 @@
+---
+gpu_node_driver_branch: "570"            # data-center driver branch (open kernel modules)
+gpu_node_cuda_keyring_url: "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb"
+gpu_node_install_slurmd: true
+gpu_node_persistence_mode: true
+gpu_node_dcgm_exporter_port: 9400

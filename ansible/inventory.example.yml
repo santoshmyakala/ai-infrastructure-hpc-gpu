@@ -1,0 +1,6 @@
+all:
+  children:
+    gpu_nodes:
+      hosts:
+        gpu01: { ansible_host: 10.0.20.11 }
+        gpu02: { ansible_host: 10.0.20.12 }

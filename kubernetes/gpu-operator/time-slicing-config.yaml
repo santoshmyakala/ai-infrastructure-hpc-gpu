@@ -1,0 +1,19 @@
+# Oversubscribe GPUs for dev/inference pods that don't saturate a GPU.
+# No memory/fault isolation between sharers: use MIG for isolation, time-slicing for density.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: time-slicing-config
+  namespace: gpu-operator
+data:
+  shared-4x: |-
+    version: v1
+    flags:
+      migStrategy: none
+    sharing:
+      timeSlicing:
+        renameByDefault: true        # advertised as nvidia.com/gpu.shared to avoid surprises
+        failRequestsGreaterThanOne: true
+        resources:
+          - name: nvidia.com/gpu
+            replicas: 4

@@ -1,0 +1,73 @@
+# Kueue: fair-share GPU quota across teams, with borrowing and preemption.
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ResourceFlavor
+metadata:
+  name: h100-80gb
+spec:
+  nodeLabels:
+    nvidia.com/gpu.product: NVIDIA-H100-80GB-HBM3
+  nodeTaints:
+    - key: nvidia.com/gpu
+      value: "present"
+      effect: NoSchedule
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: Cohort
+metadata:
+  name: ai-platform
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: research
+spec:
+  cohort: ai-platform
+  namespaceSelector: {}
+  queueingStrategy: BestEffortFIFO
+  preemption:
+    reclaimWithinCohort: Any
+    withinClusterQueue: LowerPriority
+  resourceGroups:
+    - coveredResources: ["cpu", "memory", "nvidia.com/gpu"]
+      flavors:
+        - name: h100-80gb
+          resources:
+            - name: cpu
+              nominalQuota: 384
+            - name: memory
+              nominalQuota: 3Ti
+            - name: nvidia.com/gpu
+              nominalQuota: 16       # guaranteed share
+              borrowingLimit: 16     # may borrow idle GPUs from the cohort
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: production-inference
+spec:
+  cohort: ai-platform
+  namespaceSelector: {}
+  resourceGroups:
+    - coveredResources: ["cpu", "memory", "nvidia.com/gpu"]
+      flavors:
+        - name: h100-80gb
+          resources:
+            - name: cpu
+              nominalQuota: 192
+            - name: memory
+              nominalQuota: 1Ti
+            - name: nvidia.com/gpu
+              nominalQuota: 8
+              lendingLimit: 4        # never lend more than half of production capacity
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: LocalQueue
+metadata:
+  name: research
+  namespace: ml-research
+spec:
+  clusterQueue: research

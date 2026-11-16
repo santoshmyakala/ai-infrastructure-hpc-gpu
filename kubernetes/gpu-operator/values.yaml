@@ -1,0 +1,26 @@
+# NVIDIA GPU Operator (Apache-2.0) Helm values.
+#   helm repo add nvidia https://helm.ngc.nvidia.com/nvidia
+#   helm install gpu-operator nvidia/gpu-operator -n gpu-operator --create-namespace -f values.yaml
+driver:
+  enabled: true            # set false on images with preinstalled drivers (EKS GPU AMI, AKS GPU node images)
+  useOpenKernelModules: true
+toolkit:
+  enabled: true            # NVIDIA Container Toolkit with CDI
+cdi:
+  enabled: true
+devicePlugin:
+  config:
+    name: time-slicing-config   # ConfigMap below; selected per node via label nvidia.com/device-plugin.config
+    default: ""
+mig:
+  strategy: mixed          # expose MIG profiles as distinct resources, e.g. nvidia.com/mig-1g.10gb
+migManager:
+  enabled: true
+dcgmExporter:
+  enabled: true
+  serviceMonitor:
+    enabled: true          # scraped by kube-prometheus-stack
+gfd:
+  enabled: true            # GPU Feature Discovery labels: product, memory, MIG capability
+nodeStatusExporter:
+  enabled: true

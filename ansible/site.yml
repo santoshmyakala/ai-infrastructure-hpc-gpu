@@ -1,0 +1,6 @@
+---
+- name: Provision GPU compute nodes
+  hosts: gpu_nodes
+  become: true
+  roles:
+    - role: gpu_node
