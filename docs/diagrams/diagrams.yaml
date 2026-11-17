@@ -1,0 +1,34 @@
+- out: platform
+  title: GPU platform — Kubernetes and Slurm on one fabric
+  subtitle: Fair-share queueing on both schedulers; NCCL over EFA / InfiniBand with GPUDirect RDMA; shared parallel file system
+  grid: {dx: 225, dy: 150}
+  groups:
+    - {id: k8s, label: Kubernetes GPU platform, sub: EKS / AKS, icon: kubernetes, color: blue, box: [1, 0, 3, 1]}
+    - {id: slurm, label: Slurm HPC cluster, sub: 23.11, icon: scheduler, color: purple, box: [1, 2.4, 3, 2.4]}
+  nodes:
+    - {id: users, label: ML engineers, sub: kubectl · sbatch, icon: users, at: [0, 1.2], color: gray}
+    - {id: kueue, label: Kueue, sub: ClusterQueues · preemption, icon: queue, at: [1, 0], color: blue}
+    - {id: job, label: PyTorchJob, sub: torchrun · NCCL, icon: pytorch, at: [2, 0], color: orange}
+    - {id: gnodes, label: GPU nodes, sub: tainted · scale-to-zero, icon: [nvidia, gpu], at: [3, 0], color: nvidia, badge: "8× H100", stack: true, pulse: true}
+    - {id: gpuop, label: GPU Operator, sub: driver · toolkit · MIG · GFD, icon: nvidia, at: [3, 1], color: nvidia}
+    - {id: dcgm, label: DCGM exporter, sub: XID · ECC · thermals, icon: [nvidia, chart], at: [2, 1], color: teal}
+    - {id: prom, label: Prometheus, sub: alerts · idle GPUs, icon: [prometheus, grafana], at: [1, 1], color: orange}
+    - {id: ctl, label: slurmctld, sub: backfill · fair-share, icon: scheduler, at: [1, 2.4], color: purple}
+    - {id: pyx, label: Pyxis / Enroot, sub: NGC containers, icon: container, at: [2, 2.4], color: purple}
+    - {id: sn, label: slurmd GPU nodes, sub: "GRES gpu:h100:8 · cgroups", icon: [nvidia, gpu], at: [3, 2.4], color: nvidia, stack: true}
+    - {id: fabric, label: High-speed fabric, sub: EFA / InfiniBand · RDMA, icon: switch, at: [4.3, 0], color: green}
+    - {id: lustre, label: Parallel file system, sub: FSx / Managed Lustre, icon: filesystem, at: [4.3, 2.4], color: amber}
+  edges:
+    - {from: users, to: k8s, label: PyTorchJob, kind: data}
+    - {from: users, to: slurm, label: sbatch / srun, kind: data}
+    - {from: kueue, to: job, label: admit, kind: control}
+    - {from: job, to: gnodes, kind: data, packet: box}
+    - {from: gpuop, to: gnodes, label: manages, kind: control}
+    - {from: gnodes, to: dcgm, kind: metrics}
+    - {from: dcgm, to: prom, kind: metrics}
+    - {from: ctl, to: pyx, kind: control}
+    - {from: pyx, to: sn, kind: data, packet: box}
+    - {from: gnodes, to: fabric, label: NCCL, kind: secure, both: true}
+    - {from: sn, to: fabric, kind: secure, both: true, at: 0.3}
+    - {from: sn, to: lustre, label: checkpoints · data, kind: data, packet: db}
+    - {from: gnodes, to: lustre, kind: data, packet: db}

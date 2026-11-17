@@ -13,26 +13,12 @@ Both run on **AWS** (EKS with p5 instances, EFA and FSx for Lustre) and **Azure*
 
 ## Architecture
 
-```mermaid
-flowchart TB
-  users([ML engineers]) -->|kubectl / PyTorchJob| k8s
-  users -->|sbatch / srun| slurm
-  subgraph k8s[Kubernetes GPU platform — EKS / AKS]
-    direction TB
-    kueue[Kueue<br/>ClusterQueues · cohort borrowing · preemption] --> tj[Kubeflow PyTorchJob<br/>torchrun · NCCL]
-    gpuop[NVIDIA GPU Operator<br/>driver · toolkit · device plugin · MIG manager · GFD]
-    tj --> gnodes[GPU nodes · tainted · scale-to-zero]
-    gpuop -.-> gnodes
-    dcgm[DCGM exporter] --> prom[(Prometheus<br/>XID · ECC · thermals · idle GPUs)]
-  end
-  subgraph slurm[Slurm HPC cluster]
-    direction TB
-    ctl[slurmctld<br/>backfill · fair-share · topology/tree] --> sn[slurmd on GPU nodes<br/>GRES gpu:h100:8 · cgroup device isolation]
-    sn --> pyx[Pyxis/Enroot<br/>NGC containers]
-  end
-  gnodes & sn <-->|NCCL over EFA / InfiniBand<br/>GPUDirect RDMA| fabric{{High-speed fabric}}
-  gnodes & sn --> lustre[(Parallel file system<br/>FSx for Lustre / Azure Managed Lustre)]
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/platform-dark.svg">
+  <img alt="GPU platform: ML engineers submit PyTorchJobs to Kubernetes (Kueue admission, GPU Operator-managed H100 nodes, DCGM exporter to Prometheus) or sbatch jobs to Slurm (slurmctld, Pyxis/Enroot containers, slurmd GPU nodes); both node pools share an EFA or InfiniBand fabric for NCCL and a Lustre parallel file system." src="docs/diagrams/platform-light.svg" width="100%">
+</picture>
+
+<sub>Animated diagram generated from <a href="docs/diagrams">docs/diagrams/*.yaml</a> with <a href="https://github.com/santoshmyakala/santoshmyakala/tree/main/tools/archdiagram">archdiagram</a>.</sub>
 
 ## What's in the repo
 
