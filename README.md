@@ -18,8 +18,6 @@ Both run on **AWS** (EKS with p5 instances, EFA and FSx for Lustre) and **Azure*
   <img alt="GPU platform: ML engineers submit PyTorchJobs to Kubernetes (Kueue admission, GPU Operator-managed H100 nodes, DCGM exporter to Prometheus) or sbatch jobs to Slurm (slurmctld, Pyxis/Enroot containers, slurmd GPU nodes); both node pools share an EFA or InfiniBand fabric for NCCL and a Lustre parallel file system." src="docs/diagrams/platform-light.svg" width="100%">
 </picture>
 
-<sub>Animated diagram generated from <a href="docs/diagrams">docs/diagrams/*.yaml</a> with <a href="https://github.com/santoshmyakala/santoshmyakala/tree/main/tools/archdiagram">archdiagram</a>.</sub>
-
 ## What's in the repo
 
 | Path | Contents | Proven by |
